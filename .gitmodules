@@ -4,3 +4,6 @@
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "smart-contracts"]
+	path = smart-contracts
+	url = https://github.com/codeking-mike/freskrow.git
