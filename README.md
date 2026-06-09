@@ -1,66 +1,107 @@
-## Foundry
+# FresCrow
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+FresCrow is a decentralized escrow dapp for freelance work. Clients can create escrows, fund them, and release funds once work is complete. Freelancers can accept jobs, mark delivery, and raise disputes when needed. The app is built with a Next.js frontend and a Solidity smart contract backend.
 
-Foundry consists of:
+## Features
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+- Create an escrow for a freelancer
+- Fund the escrow with ETH
+- Accept the job and track progress
+- Mark work as delivered and release funds
+- Refund or dispute escrows when necessary
+- View escrows from both the client and freelancer sides
 
-## Documentation
+## Tech Stack
 
-https://book.getfoundry.sh/
+- Frontend: Next.js, React, TypeScript, Tailwind CSS
+- Web3: RainbowKit, wagmi, viem
+- Smart contracts: Solidity, Foundry, OpenZeppelin
+- Network: Sepolia testnet by default
 
-## Usage
+## Project Structure
 
-### Build
+- frontend/: Next.js application and UI
+- smart-contracts/: Foundry project containing the FresCrow Solidity contract
+- frontend/abi/frescrow.ts: ABI and deployed contract address used by the frontend
 
-```shell
-$ forge build
+## Prerequisites
+
+Before you begin, install:
+
+- Node.js 20+ and npm
+- Foundry
+- MetaMask or another wallet that supports Sepolia
+- Sepolia ETH from a faucet
+
+## 1. Clone the Repository
+
+```bash
+git clone <your-repo-url>
+cd frescrow
 ```
 
-### Test
+## 2. Install Frontend Dependencies
 
-```shell
-$ forge test
+```bash
+cd frontend
+npm install
 ```
 
-### Format
+## 3. Build and Test the Smart Contracts
 
-```shell
-$ forge fmt
+```bash
+cd ../smart-contracts
+forge install
+forge build
+forge test
 ```
 
-### Gas Snapshots
+## 4. Deploy the Smart Contract
 
-```shell
-$ forge snapshot
+The deployment script expects a private key in the environment and a RPC URL for Sepolia.
+
+```bash
+cd smart-contracts
+export PRIVATE_KEY=0xYOUR_PRIVATE_KEY
+forge script script/Deploy.s.sol:DeployFresCrow --rpc-url https://sepolia.infura.io/v3/YOUR_PROJECT_ID --broadcast
 ```
 
-### Anvil
+If the deployment succeeds, copy the new contract address and update it in:
 
-```shell
-$ anvil
+- frontend/abi/frescrow.ts
+
+> The frontend currently points to the deployed Sepolia address in the ABI file. If you deploy a new contract, update that address before running the app.
+
+## 5. Run the Frontend
+
+From the repository root:
+
+```bash
+cd frontend
+npm run dev
 ```
 
-### Deploy
+Open http://localhost:3000 in your browser.
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
+## 6. Connect and Use the Dapp
 
-### Cast
+1. Open the app in your browser.
+2. Connect your wallet.
+3. Switch your wallet to the Sepolia network.
+4. Make sure you have Sepolia ETH available.
+5. Create or interact with an escrow from the dashboard.
 
-```shell
-$ cast <subcommand>
-```
+## Notes
 
-### Help
+- The app is configured for Sepolia by default.
+- If you want to use a different network or RPC endpoint, update the Wagmi configuration in frontend/lib/wagmi.ts.
+- For local contract development, you can also use Foundry Anvil and point the frontend to that local deployment.
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+## Useful Foundry Commands
+
+```bash
+forge build
+forge test
+forge fmt
+forge script script/Deploy.s.sol:DeployFresCrow --rpc-url <RPC_URL> --broadcast
 ```
