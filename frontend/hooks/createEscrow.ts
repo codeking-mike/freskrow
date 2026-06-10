@@ -2,12 +2,17 @@
 
 import { useWriteContract } from 'wagmi';
 
+import {
+  FRESCROW_ABI,
+  FRESCROW_ADDRESS,
+} from '@/abi/frescrow';
+
 export function useCreateEscrow() {
   const { writeContractAsync } =
     useWriteContract();
 
   const createEscrow = async (
-    freelancer: string,
+    freelancer: `0x${string}`,
     title: string
   ) => {
     return writeContractAsync({
