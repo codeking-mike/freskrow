@@ -21,11 +21,63 @@ export default function UpworkWeb3Marketplace() {
   const [targetFreelancer, setTargetFreelancer] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [jobBudget, setJobBudget] = useState('');
-
-  // --- AUTOMATED MARKETPLACE STATE ---
   const [associatedIds, setAssociatedIds] = useState<number[]>([]);
 
-  // 1. Automatically fetch the array of Escrow IDs owned by the connected client
+  // --- PERSISTENCE LAYER VIA LOCALSTORAGE ---
+  // Automatically check for an existing profile whenever the active wallet address changes
+  useEffect(() => {
+    if (isConnected && address) {
+      const savedProfileRaw = localStorage.getItem(`frescrow_profile_${address.toLowerCase()}`);
+      
+      if (savedProfileRaw) {
+        try {
+          const profile = JSON.parse(savedProfileRaw);
+          setUsername(profile.username);
+          setUserRole(profile.userRole);
+          setIsRegistered(true);
+        } catch (error) {
+          console.error("Error reading saved profile sequence from localStorage", error);
+        }
+      } else {
+        // No saved profile for this specific address, reset UI state back to initialization gating
+        setUserRole('none');
+        setIsRegistered(false);
+        setUsername('');
+      }
+    } else {
+      // Wallet disconnected completely
+      setUserRole('none');
+      setIsRegistered(false);
+      setUsername('');
+    }
+  }, [isConnected, address]);
+
+  // Handler to commit profile metrics to localStorage safely
+  const handleRegisterProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username.trim() && userRole !== 'none' && address) {
+      const profileData = {
+        username: username.trim(),
+        userRole: userRole
+      };
+      
+      // Lock it down using a unique key derived from the user's active wallet address
+      localStorage.setItem(`frescrow_profile_${address.toLowerCase()}`, JSON.stringify(profileData));
+      setIsRegistered(true);
+    }
+  };
+
+  // Handler to drop profile persistence states on manual sign-out actions
+  const handleLogoutProfile = () => {
+    if (address) {
+      localStorage.removeItem(`frescrow_profile_${address.toLowerCase()}`);
+    }
+    setUserRole('none');
+    setIsRegistered(false);
+    setUsername('');
+  };
+
+  // --- CHAIN FEED CONTRACT DATA READERS ---
   const { data: clientIdsRaw, refetch: refetchClientJobs } = useReadContract({
     address: FRESCROW_ADDRESS,
     abi: FRESCROW_ABI,
@@ -34,7 +86,6 @@ export default function UpworkWeb3Marketplace() {
     query: { enabled: isConnected && userRole === 'client' && !!address }
   });
 
-  // 2. Automatically fetch the array of Escrow IDs assigned to the connected freelancer
   const { data: freelancerIdsRaw, refetch: refetchFreelancerJobs } = useReadContract({
     address: FRESCROW_ADDRESS,
     abi: FRESCROW_ABI,
@@ -43,10 +94,8 @@ export default function UpworkWeb3Marketplace() {
     query: { enabled: isConnected && userRole === 'freelancer' && !!address }
   });
 
-  // Keep our job feeds updated based on user role shifts
   useEffect(() => {
     if (userRole === 'client' && clientIdsRaw) {
-      // Map BigInts to standard JavaScript Numbers and reverse to show newest first
       setAssociatedIds([...(clientIdsRaw as bigint[])].map(id => Number(id)).reverse());
     } else if (userRole === 'freelancer' && freelancerIdsRaw) {
       setAssociatedIds([...(freelancerIdsRaw as bigint[])].map(id => Number(id)).reverse());
@@ -55,31 +104,18 @@ export default function UpworkWeb3Marketplace() {
     }
   }, [clientIdsRaw, freelancerIdsRaw, userRole]);
 
-  // Global Refetch Pipeline Helper
   const refreshMarketplaceFeed = () => {
     if (userRole === 'client') refetchClientJobs();
     if (userRole === 'freelancer') refetchFreelancerJobs();
   };
 
-  // Run a refresh automatically when an on-chain transaction completely settles
   useEffect(() => {
-    if (isTxConfirmed) {
-      refreshMarketplaceFeed();
-    }
+    if (isTxConfirmed) refreshMarketplaceFeed();
   }, [isTxConfirmed]);
 
-  // Add or verify this handler is inside your main UpworkWeb3Marketplace function:
-    const handleRegisterProfile = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (username.trim()) {
-        setIsRegistered(true);
-      }
-    };
-  // Action Form Submission Handler
   const handlePostJobAndFund = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetFreelancer || !jobTitle) return;
-    
     writeContract({
       address: FRESCROW_ADDRESS,
       abi: FRESCROW_ABI,
@@ -88,7 +124,7 @@ export default function UpworkWeb3Marketplace() {
     });
   };
 
-  // --- RENDERING ROUTINES ---
+  // --- RENDER ROUTINES ---
 
   if (!isConnected) {
     return (
@@ -101,7 +137,7 @@ export default function UpworkWeb3Marketplace() {
             Secure Trustless Smart Escrows
           </h1>
           <p className="text-slate-400 text-lg">
-            Welcome to Frescrow, the premium Web3 framework bridging elite freelancers and global clients using automated immutable contract infrastructure.
+            The premium Web3 framework bridging elite freelancers and global clients using automated immutable contract infrastructure.
           </p>
           <div className="flex justify-center pt-4">
             <ConnectButton label="Connect Web3 Wallet to Enter" />
@@ -115,7 +151,7 @@ export default function UpworkWeb3Marketplace() {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-6">
         <div className="max-w-3xl w-full text-center space-y-8">
-          <h2 className="text-3xl font-extrabold text-slate-100">Welcome to Frescrow. Choose your path:</h2>
+          <h2 className="text-3xl font-extrabold text-slate-100">Welcome to the Platform. Choose your path:</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <button 
               onClick={() => setUserRole('freelancer')}
@@ -126,7 +162,7 @@ export default function UpworkWeb3Marketplace() {
               </div>
               <h3 className="text-xl font-bold text-slate-200 group-hover:text-indigo-400 transition-colors">I am a Freelancer</h3>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Browse active on-chain freelance opportunities, manage job delivery lifecycles, and claim securely held multi-milestone escrow deposits.
+                Browse active on-chain contract agreements, manage job delivery lifecycles, and claim securely held multi-milestone escrow deposits.
               </p>
               <div className="text-indigo-400 flex items-center gap-1 text-xs font-bold uppercase tracking-wider pt-2">
                 Enter Dashboard <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
@@ -142,7 +178,7 @@ export default function UpworkWeb3Marketplace() {
               </div>
               <h3 className="text-xl font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">I am a Client</h3>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Draft legal job specs, hire freelancers, safe-lock project fees inside an escrow runtime container, and retain granular release-of-funds privileges.
+                Draft legal job specs, safe-lock project fees inside an escrow runtime container, and retain granular release-of-funds privileges.
               </p>
               <div className="text-cyan-400 flex items-center gap-1 text-xs font-bold uppercase tracking-wider pt-2">
                 Enter Dashboard <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
@@ -157,6 +193,7 @@ export default function UpworkWeb3Marketplace() {
   if (!isRegistered) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-6">
+        {/* CHANGED TO: handleRegisterProfile */}
         <form onSubmit={handleRegisterProfile} className="max-w-md w-full bg-slate-900/60 border border-slate-800 rounded-2xl p-8 space-y-6 shadow-xl">
           <div className="space-y-2 text-center">
             <h2 className="text-2xl font-bold tracking-tight">Create Workspace Profile</h2>
@@ -165,6 +202,7 @@ export default function UpworkWeb3Marketplace() {
           <div className="space-y-1">
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Full Professional Name / Alias</label>
             <input 
+              type="text" 
               required
               placeholder="e.g., Alice Dev" 
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
@@ -198,9 +236,10 @@ export default function UpworkWeb3Marketplace() {
               <p className="text-xs font-mono text-slate-500 truncate max-w-[150px]">{address}</p>
             </div>
             <ConnectButton showBalance={false} />
+            {/* CHANGED TO: handleLogoutProfile */}
             <button 
-              onClick={() => { setUserRole('none'); setIsRegistered(false); setUsername(''); }} 
-              className="text-xs text-slate-400 hover:text-slate-200 underline"
+              onClick={handleLogoutProfile} 
+              className="text-xs text-rose-400 hover:text-rose-300 underline font-medium"
             >
               Log out
             </button>
@@ -243,7 +282,7 @@ export default function UpworkWeb3Marketplace() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Contract Budget (ETH) — Funded Later</label>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Contract Budget (ETH)</label>
                   <input 
                     type="number" 
                     step="0.0001" 
@@ -279,7 +318,7 @@ export default function UpworkWeb3Marketplace() {
             </div>
           )}
 
-          {/* Transaction Receipt Status Log Toast */}
+          {/* Transaction Receipt Status Log */}
           {(isPending || hash) && (
             <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-2 shadow-inner">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Network Node Transceiver</h4>
@@ -306,7 +345,7 @@ export default function UpworkWeb3Marketplace() {
           )}
         </div>
 
-        {/* RIGHT COLUMN AREA: THE AUTOMATED REAL-TIME JOBS STREAM */}
+        {/* RIGHT COLUMN AREA: JOBS FEED LIST */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex justify-between items-center pb-2">
             <h3 className="text-xl font-bold text-slate-200">
@@ -344,7 +383,7 @@ export default function UpworkWeb3Marketplace() {
   );
 }
 
-// --- SELF-CONTAINED MODULAR CONTRACT RENDERER CARD ---
+// --- KEEP YOUR SAME JOBCARD INFRASTRUCTURE EXACTLY AS DEFINED PREVIOUSLY BELOW ---
 interface JobCardProps {
   escrowId: number;
   userRole: 'client' | 'freelancer';
@@ -357,8 +396,7 @@ interface JobCardProps {
 function JobCard({ escrowId, userRole, userAddress, writeContract, isPending, presetBudget }: JobCardProps) {
   const [fundingValue, setFundingValue] = useState(presetBudget || '0.01');
 
-  // Fetch individual contract details directly from chain
-  const { data: escrow, refetch: syncCard } = useReadContract({
+  const { data: escrow } = useReadContract({
     address: FRESCROW_ADDRESS,
     abi: FRESCROW_ABI,
     functionName: 'getEscrow',
@@ -387,7 +425,6 @@ function JobCard({ escrowId, userRole, userAddress, writeContract, isPending, pr
 
   return (
     <div className="bg-slate-900/50 border border-slate-800/80 rounded-xl overflow-hidden hover:border-slate-700 transition-colors shadow-md">
-      {/* Top Banner Row */}
       <div className="p-5 border-b border-slate-800/60 bg-slate-900/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -406,14 +443,11 @@ function JobCard({ escrowId, userRole, userAddress, writeContract, isPending, pr
           </div>
           <h4 className="text-lg font-bold text-slate-100 mt-2">{titleStr || "Unspecified Assignment Contract"}</h4>
         </div>
-
         <div className="text-right bg-slate-950/80 p-2 rounded-xl border border-slate-900 min-w-[120px]">
           <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Locked Vault</span>
           <span className="text-lg font-black font-mono text-emerald-400">{formatEther(amountRaw)} ETH</span>
         </div>
       </div>
-
-      {/* Core Meta Rows */}
       <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
         <div className="space-y-1.5">
           <p className="text-slate-500 font-medium">Client Signee:</p>
@@ -428,15 +462,11 @@ function JobCard({ escrowId, userRole, userAddress, writeContract, isPending, pr
           </p>
         </div>
       </div>
-
-      {/* FOOTER ACTION ROUTINES BASED ON STATE STATUS ENUMS */}
       <div className="p-5 bg-slate-950/40 border-t border-slate-800/40 flex flex-wrap items-center justify-between gap-4">
         <div className="text-[11px] text-slate-500 flex items-center gap-1">
           <Clock size={12} /> Last synced directly from contract mapping data stack.
         </div>
-
         <div className="flex items-center gap-2">
-          {/* CLIENT PIPELINE TRIGGER: Fund the created empty container */}
           {statusInt === 0 && userRole === 'client' && userAddress.toLowerCase() === clientAddr.toLowerCase() && (
             <div className="flex items-center gap-2">
               <input 
@@ -455,8 +485,6 @@ function JobCard({ escrowId, userRole, userAddress, writeContract, isPending, pr
               </button>
             </div>
           )}
-
-          {/* FREELANCER PIPELINE TRIGGER: Accept funded contract */}
           {statusInt === 1 && userRole === 'freelancer' && userAddress.toLowerCase() === freelancerAddr.toLowerCase() && (
             <button 
               disabled={isPending}
@@ -466,8 +494,6 @@ function JobCard({ escrowId, userRole, userAddress, writeContract, isPending, pr
               <CheckCircle size={14} /> Accept Contract
             </button>
           )}
-
-          {/* FREELANCER PIPELINE TRIGGER: Mark Delivered */}
           {statusInt === 2 && userRole === 'freelancer' && userAddress.toLowerCase() === freelancerAddr.toLowerCase() && (
             <button 
               disabled={isPending}
@@ -477,8 +503,6 @@ function JobCard({ escrowId, userRole, userAddress, writeContract, isPending, pr
               <PackageCheck size={14} /> Mark Job Delivered
             </button>
           )}
-
-          {/* FREELANCER PIPELINE TRIGGER: Mark Completed */}
           {statusInt === 3 && userRole === 'freelancer' && userAddress.toLowerCase() === freelancerAddr.toLowerCase() && (
             <button 
               disabled={isPending}
@@ -488,8 +512,6 @@ function JobCard({ escrowId, userRole, userAddress, writeContract, isPending, pr
               Complete Lifecycle Pipeline
             </button>
           )}
-
-          {/* CLIENT PIPELINE TRIGGER: Release Escrow Balance down to Freelancer */}
           {statusInt === 4 && userRole === 'client' && userAddress.toLowerCase() === clientAddr.toLowerCase() && (
             <button 
               disabled={isPending}
