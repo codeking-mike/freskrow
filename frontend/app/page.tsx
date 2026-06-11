@@ -137,8 +137,9 @@ export default function UpworkWeb3Marketplace() {
             Secure Trustless Smart Escrows
           </h1>
           <p className="text-slate-400 text-lg">
-            The premium Web3 framework bridging elite freelancers and global clients using automated immutable contract infrastructure.
+            Welcome to FresCrow, the premium P2P Web3 Escrow framework that connects elite freelancers and global clients to make and accept payments using automated immutable contract infrastructure.
           </p>
+          <p className="text-slate-200 text-lg">Receive and Accept Payments from clients worldwide</p>
           <div className="flex justify-center pt-4">
             <ConnectButton label="Connect Web3 Wallet to Enter" />
           </div>
@@ -151,7 +152,7 @@ export default function UpworkWeb3Marketplace() {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-6">
         <div className="max-w-3xl w-full text-center space-y-8">
-          <h2 className="text-3xl font-extrabold text-slate-100">Welcome to the Platform. Choose your path:</h2>
+          <h2 className="text-3xl font-extrabold text-slate-100">Welcome to Frescrow. Choose your path:</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <button 
               onClick={() => setUserRole('freelancer')}
@@ -162,7 +163,7 @@ export default function UpworkWeb3Marketplace() {
               </div>
               <h3 className="text-xl font-bold text-slate-200 group-hover:text-indigo-400 transition-colors">I am a Freelancer</h3>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Browse active on-chain contract agreements, manage job delivery lifecycles, and claim securely held multi-milestone escrow deposits.
+                Accept payments from clients securely, manage job delivery lifecycles, and claim securely held multi-milestone escrow deposits.
               </p>
               <div className="text-indigo-400 flex items-center gap-1 text-xs font-bold uppercase tracking-wider pt-2">
                 Enter Dashboard <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
@@ -178,7 +179,7 @@ export default function UpworkWeb3Marketplace() {
               </div>
               <h3 className="text-xl font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">I am a Client</h3>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Draft legal job specs, safe-lock project fees inside an escrow runtime container, and retain granular release-of-funds privileges.
+                Create payment contracts, safe-lock project fees inside an escrow runtime container, and retain granular release-of-funds privileges.
               </p>
               <div className="text-cyan-400 flex items-center gap-1 text-xs font-bold uppercase tracking-wider pt-2">
                 Enter Dashboard <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
